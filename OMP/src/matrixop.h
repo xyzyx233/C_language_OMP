@@ -27,5 +27,6 @@ double* vectorsub(double** vec1, double** vec2, int num);
 double** vectoradd(double** vec,int num,double n);
 double norm(double** vec,int num);
 double* finish(double** pos, double** aug, int num, int n);
+void RightShift(double *arr, int N, int k);
 
 #endif /* MATRIXOP_H_ */

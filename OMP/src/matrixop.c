@@ -235,3 +235,20 @@ double* finish(double** pos, double** aug, int num,int n){
 	}
 	return ans;
 }
+void Reverse(double *arr, int b, int e)
+{
+    for(; b < e; b++, e--)
+    {
+        double temp = arr[e];
+        arr[e] = arr[b];
+        arr[b] = temp;
+    }
+}
+
+void RightShift(double *arr, int N, int k)
+{
+    k %= N;
+    Reverse(arr, 0, N-k-1);
+    Reverse(arr, N-k, N-1);
+    Reverse(arr, 0, N-1);
+}
