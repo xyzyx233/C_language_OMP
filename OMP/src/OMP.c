@@ -13,7 +13,7 @@
 #include <time.h>
 #include <math.h>
 #include <memory.h>
-#include "DWT.h"
+//#include "DWT.h"
 #include "matrixop.h"
 #include "OMPOP.h"
 
@@ -65,35 +65,47 @@ typedef struct RGB_QUAD {
 
 void testout(double** x, int height, int width, char*str);	//将指定矩阵输出至选中的文件中
 void writebmp(FILE* fo, double** pixel, int height, int width);
-void readbmp(FILE* fp, double** pixel, int height, int width);	//读取图像
+void readbmp(FILE* fp, double** pixel);	//读取图像
 void writebmp(FILE* fo, double** pixel, int height, int width);
 double** createsimplingmatrix(int wid, int height);	//生成观测矩阵
 double error(double** piexl, double** ans, int height, int width);
 //double** observation(double**, int, double**, int);	//进行观测
+void testoutcol(double* x, int height, char*str) {
+	int i;
+	FILE *fto = fopen(str, "wb");
+	for (i = 0; i < height; i++) {
+			fprintf(fto, "%f\t", x[i]);
+	}
+	fclose(fto);
+}
 double gaussrand();	//生成高斯矩阵
 
 int main() {
-	FILE *fp,  *fo;
+	FILE *fp,  *fo, *fp1;
 	BMPFILEHEADER fileHeader;
 	BMPINF infoHeader;
 	long width, height;
-	int i;
+	int i,j;
 	int temp[256*4];
 //		long offset,bmpImageSize, bytesPerPixel, size, bitCount;
 //		WORD c;
-	double **pixel = NULL;
-	double **simplingmatrix = NULL;
+	double **pixel=NULL;
+	double **simplingmatrix=NULL;
 	double **compressed_matrix = NULL;
-	double **ww = NULL, **wwturn = NULL;
+	double **ww =NULL, **wwturn=NULL;
 	double** temp1=NULL;
 	double **ans = NULL;
 
 	if ((fp = fopen("lena256.bmp", "rb")) == NULL) {
-		printf("Cann't open the file!\n");
+		printf("Cann't open lena256!\n");
+		exit(0);
+	}
+	if ((fp1 = fopen("DWT.txt", "rb")) == NULL) {
+		printf("Cann't open DWT.txt!\n");
 		exit(0);
 	}
 	if ((fo = fopen("OK.bmp", "wb")) == NULL) {
-		printf("Cann't open the file!\n");
+		printf("Cann't open OK.bmp!\n");
 		exit(0);
 	}
 	fseek(fp, 0, 0);
@@ -101,46 +113,52 @@ int main() {
 	fwrite(&fileHeader, sizeof(fileHeader), 1, fo);
 	fread(&infoHeader, sizeof(infoHeader), 1, fp);
 	fwrite(&infoHeader, sizeof(infoHeader), 1, fo);
-	fread(&temp,sizeof(int),256*4,fp);
-	fwrite(&temp,sizeof(int),256*4,fo);
-	//fseek(fp, 256 * 4, SEEK_CUR);
+	fread(&temp,sizeof(int),256,fp);
+	fwrite(&temp,sizeof(int),256,fo);
 
 	//计算并输出位图数据的偏移量，图像的大小，宽度和高度，每个像素点所占的字节
 	width = infoHeader.bWidth;
 	height = infoHeader.bHeight;
-//		size = fileHeader.bSize;
-//		offset = fileHeader.bOffset;
-//		bmpImageSize = infoHeader.bmpImageSize;
-//		bitCount = infoHeader.bBitCount;
-//		bytesPerPixel = infoHeader.bBitCount / 8;
 	pixel = creatmatrix(height, width);
 	if (pixel == NULL)
 		return 0;
-	readbmp(fp, pixel, height, width);
-	simplingmatrix = createsimplingmatrix(190, height);
+	readbmp(fp, pixel);
+	simplingmatrix = createsimplingmatrix(190, width);
 	compressed_matrix = matrixmultiplic(pixel, width, simplingmatrix, 190,width);
-	ww = creatmatrix(height, height);
-	ww = DWT(height);
+	ww = creatmatrix(256, 256);
+//	ww = DWT(height);
+    for(i=0;i<256;i++)
+        for(j=0;j<256;j++)
+        fscanf(fp1,"%lf",&ww[i][j]);
 	wwturn = matrixturn(ww, height, height);
-	compressed_matrix = matrixmultiplic(wwturn, width, compressed_matrix,
+	temp1 = matrixmultiplic(wwturn, width, compressed_matrix,
 			190,width);
-	simplingmatrix = matrixmultiplic(wwturn, width, simplingmatrix, 190,width);
-	ans = creatmatrix(height, width);
-	/*for (i = 0; i < width; i++) {
-		double* rec = OMP(getcolumn(compressed_matrix, 190, i),
-				simplingmatrix, 190, width, height);
-		setcolum(ans, i, rec, height);
-	}
+	compressed_matrix=temp1;
+	temp1 = matrixmultiplic(wwturn, width, simplingmatrix, 190,width);
+	simplingmatrix=temp1;
+    ans = creatmatrix(height, width);
+
+//	testout(simplingmatrix,190,width,"simplingmatrix.txt");
+//	testout(compressed_matrix,190,width,"compressed_matrix.txt");
+    for (i = 0; i < width; i++)
+    {
+//        printf("\n%d selected\n",i);
+        double* col=getcolumn(compressed_matrix, 190, i);
+        double* rec =OMP(col, simplingmatrix, 190, width, height);
+        printf("%d OMP OK\n",i+1);
+        setcolum(ans, i, rec, height);
+    }
 	//小波反变换
-	temp1=matrixmultiplic(matrixturn(ans,height,width),width,ww,height,width);
-	ans=matrixmultiplic(ans,width,temp1,height,width);*/
+	temp1=matrixmultiplic(ans,width,wwturn,height,width);
+	ans=matrixmultiplic(ww,width,temp1,height,width);
+
 	//输出结果
 	writebmp(fo,ans,height,width);
-	//误差
 
 	//测试用部分
-	//testout(pixel,height,width,"test.txt");
-	//testout(compressed_matrix,190,width,"compressed_matrix.txt");
+//	testout(pixel,height,width,"pixel.txt");
+//	testout(ans,height,width,"ans.txt");
+	printf("pixel OK\n");
 	return 0;
 }
 void testout(double** x, int height, int width, char*str) {
@@ -154,18 +172,19 @@ void testout(double** x, int height, int width, char*str) {
 	}
 	fclose(fto);
 }
-void readbmp(FILE* fp, double** pixel, int height, int width) {
+void readbmp(FILE* fp, double** pixel) {
 	int i, j;
-	for (i = height - 1; i >= 0; i--) {
-		for (j = 0; j < width; j++) {
+	for (i = 256 - 1; i >= 0; i--) {
+		for (j = 0; j < 256; j++) {
 			pixel[i][j] = (double) fgetc(fp);
 		}
 	}
 	fclose(fp);
 }
-double** createsimplingmatrix(int wid, int height) {
+double** createsimplingmatrix(int height, int wid) {
 	double **phi = NULL;
 	int i, j;
+	double x, p[190][256];
 	phi = (double**) malloc(height * sizeof(double*));
 	if (phi == NULL)
 		return NULL;
@@ -174,36 +193,60 @@ double** createsimplingmatrix(int wid, int height) {
 		if (phi[i] == NULL)
 			return NULL;
 	}
+	for(i=0;i<height;i++)
+		for(j=0;j<wid;j++){
+			phi[i][j]=0;
+			p[i][j]=0;
+		}
+	srand(time(NULL));
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < wid; j++) {
-			phi[i][j] = gaussrand();
+//			while(1){
+				x=gaussrand();
+//				if(x>=-10||x<=10){
+//					break;
+//				}
+//			}
+			p[i][j] = x;
 		}
 	}
+	for(i=0;i<height;i++)
+		for(j=0;j<wid;j++){
+			phi[i][j]=p[i][j];
+		}
 	return phi;
 }
 double gaussrand() {
-	static double V1, V2, S;
-	static int phase = 0;
-	double X;
+//
+//    double x = 0;
+//    int i;
+//    for(i = 0; i < 25; i++)
+//    {
+//        x += (double)rand() / RAND_MAX;
+//    }
+//
+//    x -= 25 / 2.0;
+//    x /= sqrt(25 / 12.0);
+//
+//    return x;
+//
+    static double U, V;
+    static int phase = 0;
+    double z;
 
-	if (phase == 0) {
-		do {
+    if(phase == 0)
+    {
+         U = (rand() + 1.1) / (RAND_MAX +2.);
+         V = rand() / (RAND_MAX + 1.);
+         z = sqrt(-1 * log(U))* sin(2 * 3.141592654 * V);
+    }
+    else
+    {
+         z = sqrt(-2 * log(U)) * cos(2 * 3.141592654 * V);
+    }
 
-			double U1 = (double) rand() / RAND_MAX;
-			double U2 = (double) rand() / RAND_MAX;
-
-			V1 = 2 * U1 - 1;
-			V2 = 2 * U2 - 1;
-			S = V1 * V1 + V2 * V2;
-		} while (S >= 1 || S == 0);
-
-		X = (double) (V1 * sqrt(-2 * log(S) / S));
-	} else
-		X = (double) (V2 * sqrt(-2 * log(S) / S));
-
-	phase = 1 - phase;
-
-	return X;
+    phase = 1 - phase;
+    return z;
 }
 void writebmp(FILE* fo, double** pixel, int height, int width) {
 	int i, j;

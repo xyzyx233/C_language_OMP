@@ -32,7 +32,7 @@ double** matrixmultiplic(double** matrix1, int width, double** matrix2,
 		int height, int wid2) {
 	int i, j, k;
 	double** ans = NULL;
-	//double** ans = creatmatrix(height,width); 这种写法会报错 conflicting types for 原因未知(目前)
+	//double** ans = creatmatrix(height,width); 这种写法会报错 conflicting types for 在声明前使用
 	ans = (double**) malloc(height * sizeof(double*));
 	if (ans == NULL)
 		return NULL;
@@ -74,6 +74,15 @@ double** creatmatrix(int height, int width) {
 	}
 	return pixel;
 }
+double* createvector(int n) {
+	double* ans = (double*) malloc(n * sizeof(double));
+	int i = 0;
+	if (!ans)
+		return NULL;
+	for (i = 0; i < n; i++)
+		ans[i] = 0;
+	return ans;
+}
 double* getcolumn(double** matrix, int height, int col) {
 	double* ans = NULL;
 	ans = (double*) malloc(height * sizeof(double));
@@ -85,45 +94,35 @@ double* getcolumn(double** matrix, int height, int col) {
 	}
 	return ans;
 }
+double* getrow(double** matrix, int column, int row) {
+	int i;
+	double* vactor = createvector(column);
+	for (i = 0; i < row; i++) {
+		matrix[i][column]=vactor[i];
+	}
+	return vactor;
+}
 void setcolum(double** matrix, int column, double* vactor, int row) {
 	int i;
 	for (i = 0; i < row; i++) {
 		matrix[column][i] = vactor[i];
 	}
 }
-double* createvector(int n) {
-	double* ans = (double*) malloc(n * sizeof(double));
-	int i = 0;
-	if (!ans)
-		return NULL;
-	for (i = 0; i < n; i++)
-		ans[i] = 0;
-	return ans;
-}
-double innerproduct(double* a, double** b, int len) {
+double innerproduct(double* a, double* b, int len) {
 	int i;
 	double sum = 0;
 	for (i = 0; i < len; i++) {
-		sum += a[i] * b[i][0];
+		sum += a[i] * b[i];
 	}
 	return sum;
 }
-double* getrow(double** matrix, int column, int row) {
-	int i;
-	double* vactor = createvector(column);
-	for (i = 0; i < row; i++) {
-		matrix[i][column] = vactor[i];
-	}
-	return vactor;
-}
+
 int max(double* vector, int num) {
-	int i, max = 0;
-	for (i = 1; i < num; i++) {
-		if (vector[i] > vector[i - 1]) {
-			max = i;
-		}
-	}
-	return max;
+	int imax=0,i=0;
+	for(i=0;i<num;i++)
+	        if(vector[imax]<vector[i])
+	            imax=i;
+	return imax;
 }
 void formatcolumn(double** matrix, int height, int column, int val) {
 	int i;
@@ -131,94 +130,135 @@ void formatcolumn(double** matrix, int height, int column, int val) {
 		matrix[i][column] = val;
 	}
 }
-double** expandmatrix(double **ma1, double *ve, int height, int width) {
-	int i, j;
-	double** ma2 = (double**) malloc(height * sizeof(double*));
-	for (i = 0; i < height; i++)
-		ma2[i] = (double*) malloc((width + 1) * sizeof(double));
-	for (i = 0; i < height; i++)
-		for (j = 0; j < width; j++)
-			ma2[i][j] = ma1[i][j];
+void expandmatrix(double **ma1, double *ve, int height, int width) {
+	int i;
 	for (i = 0; i < height; i++) {
-		ma2[i][width] = ve[i];
+		ma1[i][width] = ve[i];
 	}
-	return ma2;
 }
-double getA(double** arcs, int n) //按第一行展开计算|A|
-{
-	if (n == 1) {
-		return arcs[0][0];
-	}
-	int i, j, k;
-	double det = 0;
-	double** temp = (double**) malloc(n * sizeof(double*));
-	for (i = 0; i < n; i++) {
-		temp[i] = (double*) malloc(n * sizeof(double));
-	}
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n - 1; j++) {
-			for (k = 0; k < n - 1; k++) {
-				temp[j][k] = arcs[j + 1][(k >= i) ? k + 1 : k];
-			}
-		}
-		double t = getA(temp, n - 1);
-		if (i % 2 == 0) {
-			det += arcs[0][i] * t;
-		} else {
-			det -= arcs[0][i] * t;
-		}
-	}
-	return det;
-}
-double** inversematrix(double** arcs, int n, double det) { //计算每一行每一列的每个元素所对应的余子式，组成A*
-	double** ans = NULL;
-	int i, j, k, t;
-	if (n == 1) {
-		ans = (double**) malloc(sizeof(double*));
-		ans[0] = (double*) malloc(sizeof(double));
-		ans[0][0] = 1;
-		return ans;
-	}
-	double **temp = (double**) malloc(n * sizeof(double*));
-	ans = (double**) malloc(sizeof(n * sizeof(double*)));
-	for (i = 0; i < n; i++) {
-		temp[i] = (double*) malloc(n * sizeof(double));
-		ans[i] = (double*) malloc(n * sizeof(double));
-	}
-	//求矩阵的逆
-	for (i = 0; i < n; i++)
-		for (j = 0; j < n; j++)
-			ans[i][j] = 0;
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n; j++) {
-			for (k = 0; k < n - 1; k++) {
-				for (t = 0; t < n - 1; t++) {
-					temp[k][t] = arcs[k >= i ? k + 1 : k][t >= j ? t + 1 : t];
-				}
-			}
-			ans[j][i] = getA(temp, n - 1);
-			if ((i + j) & 1) {
-				ans[j][i] = -ans[j][i];
-			}
-		}
-	}
-	for (i = 0; i < n; i++)
-		for (j = 0; j < n; j++)
-			ans[i][j] = ans[i][j] / det;
-	return ans;
+double** inversematrix(double **A_, int n) { //计算每一行每一列的每个元素所对应的余子式，组成A*
+
+    double **A;
+    double **L;
+    double **U;
+    double **u;
+    double **r;
+    double **out;
+    int i,j,k,x;
+    double s;
+    A = (double**)malloc(n*sizeof(double*));
+    L = (double**)malloc(n*sizeof(double*));
+    U = (double**)malloc(n*sizeof(double*));
+    u = (double**)malloc(n*sizeof(double*));
+    r = (double**)malloc(n*sizeof(double*));
+    out = (double**)malloc(n*sizeof(double*));
+    for( i = 0; i < n; i++)
+    {
+        A[i] = (double*)malloc(n*sizeof(double));
+        for( j = 0; j < n; j++)
+        {
+            A[i][j] = A_[i][j];
+        }
+    }
+    for( i = 0; i < n; i++)
+    {
+        L[i] = (double*)malloc((i+1)*sizeof(double));
+        U[i] = (double*)malloc(n*sizeof(double));
+        u[i] = (double*)malloc(n*sizeof(double));
+        r[i] = (double*)malloc(n*sizeof(double));
+        out[i] = (double*)malloc(n*sizeof(double));
+        L[i][i] = 1;
+    }
+    //直接三角分解
+    //首先计算矩阵L的第1列，矩阵U的第1行
+    for( i = 0; i < n; i++)
+    {
+        U[0][i] = A[0][i];
+        if(i != 0)
+        {
+            L[i][0] = A[i][0]/U[0][0];
+        }
+    }
+    //递推求矩阵L第r行和矩阵U第r列
+    for(x = 1; x < n; x++)
+    {
+        for(int i = x; i < n; i++)
+        {
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int k = 0; k < x; k++)
+            {
+                tmp1 += L[x][k]*U[k][i];
+                if(i > x)
+                    tmp2 += L[i][k]*U[k][x];
+            }
+            U[x][i] = A[x][i] - tmp1;
+            if(i > x)
+                L[i][x] = (A[i][x] - tmp2)/U[x][x];
+        }
+    }
+/////////////////////求L和U矩阵的逆//////////////////////////////////////////
+        for (i=0; i<n; i++) /*求矩阵U的逆 */
+        {
+            u[i][i]=1/U[i][i];//对角元素的值，直接取倒数
+            for (k=i-1; k>=0; k--)
+            {
+                s=0;
+                for (j=k+1; j<=i; j++)
+                    s=s+U[k][j]*u[j][i];
+                u[k][i]=-s/U[k][k];//迭代计算，按列倒序依次得到每一个值，
+            }
+        }
+        for (i=0; i<n; i++) //求矩阵L的逆
+        {
+            r[i][i]=1; //对角元素的值，直接取倒数，这里为1
+            for (k=i+1; k<n; k++)
+            {
+                for (j=i; j<=k-1; j++)
+                    r[k][i]=r[k][i]-L[k][j]*r[j][i];   //迭代计算，按列顺序依次得到每一个值
+            }
+        }
+//////////将r和u相乘，得到逆矩阵
+        for(i=0; i<n; i++)
+        {
+            for(j=0; j<n; j++)
+            {
+                out[i][j]=0;
+            }
+        }
+        for(i=0; i<n; i++)
+        {
+            for(j=0; j<n; j++)
+            {
+                for(k=0; k<n; k++)
+                {
+                    out[i][j]+=u[i][k]*r[k][j];
+                }
+            }
+        }
+        for(i=0;i<n;i++){
+            free(A[i]);
+            free(U[i]);
+            free(u[i]);
+            free(r[i]);
+            free(L[i]);
+        }
+        free(A);
+        free(L);
+        free(U);
+        free(u);
+        free(r);
+        return out;
 }
 double* vectorsub(double** vec1, double** vec2, int num) {
 	double* ans = (double*) malloc(num * sizeof(double));
 	int i;
 	for (i = 0; i < num; i++)
-		ans[i] = vec1[i][0] - vec2[0][i];
+		ans[i] = vec1[i][0] - vec2[i][0];
 	return ans;
 }
-double** vectoradd(double** vec, int num, double n) {
-	double** ans=(double**)malloc(sizeof(double*));
-	ans[0]= (double*) realloc(ans[0], (num + 1) * sizeof(double));
-	ans[0][num] = n;
-	return ans;
+void vectoradd(int* vec, int num, int n) {
+	vec[num] = n;
 }
 double norm(double* vec,int num){
 	double ans;
@@ -227,11 +267,11 @@ double norm(double* vec,int num){
 		ans+=vec[i]*vec[i];
 	return sqrt(ans);
 }
-double* finish(double** pos, double** aug, int num,int n){
+double* finish(int* pos, double** aug, int num,int n){
 	double* ans=createvector(n);
 	int i;
 	for(i=0;i<num;i++){
-		ans[(int)pos[0][i]]=aug[i][0];
+		ans[pos[i]]=aug[i][0];
 	}
 	return ans;
 }
