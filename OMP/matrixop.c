@@ -117,7 +117,7 @@ double innerproduct(double* a, double* b, int len) {
 	return sum;
 }
 
-int max(double* vector, int num) {
+int maxx(double* vector, int num) {
 	int imax=0,i=0;
 	for(i=0;i<num;i++)
 	        if(vector[imax]<vector[i])
@@ -136,22 +136,17 @@ void expandmatrix(double **ma1, double *ve, int height, int width) {
 		ma1[i][width] = ve[i];
 	}
 }
-double** inversematrix(double **A_, int n) { //¼ÆËãÃ¿Ò»ÐÐÃ¿Ò»ÁÐµÄÃ¿¸öÔªËØËù¶ÔÓ¦µÄÓà×ÓÊ½£¬×é³ÉA*
+void inversematrix(double **A_, int n,double** out) { //¼ÆËãÃ¿Ò»ÐÐÃ¿Ò»ÁÐµÄÃ¿¸öÔªËØËù¶ÔÓ¦µÄÓà×ÓÊ½£¬×é³ÉA*
 
-    double **A;
-    double **L;
-    double **U;
-    double **u;
-    double **r;
-    double **out;
+    double **A = (double**)malloc(n * sizeof(double*));
+    double **L = (double**)malloc(n * sizeof(double*));
+    double **U = (double**)malloc(n * sizeof(double*));
+    double **u = (double**)malloc(n * sizeof(double*));
+    double **r = (double**)malloc(n * sizeof(double*));
+    //double **out;
     int i,j,k,x;
     double s;
-    A = (double**)malloc(n*sizeof(double*));
-    L = (double**)malloc(n*sizeof(double*));
-    U = (double**)malloc(n*sizeof(double*));
-    u = (double**)malloc(n*sizeof(double*));
-    r = (double**)malloc(n*sizeof(double*));
-    out = (double**)malloc(n*sizeof(double*));
+    //out = (double**)malloc(n*sizeof(double*));
     for( i = 0; i < n; i++)
     {
         A[i] = (double*)malloc(n*sizeof(double));
@@ -166,9 +161,14 @@ double** inversematrix(double **A_, int n) { //¼ÆËãÃ¿Ò»ÐÐÃ¿Ò»ÁÐµÄÃ¿¸öÔªËØËù¶ÔÓ¦µ
         U[i] = (double*)malloc(n*sizeof(double));
         u[i] = (double*)malloc(n*sizeof(double));
         r[i] = (double*)malloc(n*sizeof(double));
-        out[i] = (double*)malloc(n*sizeof(double));
+        //out[i] = (double*)malloc(n*sizeof(double));
         L[i][i] = 1;
     }
+	for(i=0;i<n;i++)
+		for (j = 0;j < n;j++) {
+			u[i][j] = 0;
+			r[i][j] = 0;
+		}
     //Ö±½ÓÈý½Ç·Ö½â
     //Ê×ÏÈ¼ÆËã¾ØÕóLµÄµÚ1ÁÐ£¬¾ØÕóUµÄµÚ1ÐÐ
     for( i = 0; i < n; i++)
@@ -248,7 +248,13 @@ double** inversematrix(double **A_, int n) { //¼ÆËãÃ¿Ò»ÐÐÃ¿Ò»ÁÐµÄÃ¿¸öÔªËØËù¶ÔÓ¦µ
         free(U);
         free(u);
         free(r);
-        return out;
+		A = NULL;
+		L = NULL;
+		U = NULL;
+		u = NULL;
+		r = NULL;
+
+        //return out;
 }
 double* vectorsub(double** vec1, double** vec2, int num) {
 	double* ans = (double*) malloc(num * sizeof(double));
@@ -261,7 +267,7 @@ void vectoradd(int* vec, int num, int n) {
 	vec[num] = n;
 }
 double norm(double* vec,int num){
-	double ans;
+	double ans=0;
 	int i;
 	for(i=0;i<num;i++)
 		ans+=vec[i]*vec[i];
